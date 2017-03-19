@@ -1,0 +1,35 @@
+# vim: set et sw=2 ts=2 :
+
+- hosts: all
+  vars:
+    input_font_url: http://input.fontbureau.com/build/?fontSelection=whole&a=0&g=0&i=0&l=0&zero=0&asterisk=0&braces=0&preset=default&line-height=1.2&accept=I+do&email=
+    unison_url: http://unison-binaries.inria.fr/files/2011.01.28-Esup-unison-2.40.61-linux-x86_64-text-static.tar.gz
+    unison_bin: unison-2.40.61-linux-x86_64-text-static
+  tasks:
+    - shell: rpm --quiet -q python2-dnf2 || dnf install -y python2-dnf
+    - name: update system
+      package: name=* state=latest
+    - name: d/l unison
+      unarchive: src={{ unison_url }} dest=/opt creates=/opt/{{ unison_bin }} remote_src=yes
+    - file: src=/opt/{{ unison_bin }} dest=/usr/bin/unison state=link
+    - name: create input font dir
+      file: path=/usr/share/fonts/input state=directory
+    - name: d/l input font
+      unarchive: src={{ input_font_url }} dest=/usr/share/fonts/input creates=/usr/share/fonts/input/Input_Fonts remote_src=yes
+      notify: run fc-cache
+    - cron: 
+        name: unison cron
+        user: kwestneat
+        minute: "*/30"
+        job: grep -q "$(/usr/sbin/iwgetid -r)" .unison-wifi && SSH_AUTH_SOCK=$(find /tmp -path "*ssh*" -type s -iname "agent.*") SSH_AGENT_PID=$(pgrep ssh-agent) ~/bin/unison -batch
+    - name: install packages
+      package: name={{ item }} state=latest
+      with_items:
+        - vim-enhanced
+        - i3
+        - git
+        - pidgin
+        - parcellite
+  handlers:
+    - name: run fc-cache
+      shell: fc-cache -s
