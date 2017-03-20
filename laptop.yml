@@ -3,9 +3,12 @@
 - hosts: all
   vars:
     input_font_url: http://input.fontbureau.com/build/?fontSelection=whole&a=0&g=0&i=0&l=0&zero=0&asterisk=0&braces=0&preset=default&line-height=1.2&accept=I+do&email=
-    unison_url: http://unison-binaries.inria.fr/files/2011.01.28-Esup-unison-2.40.61-linux-x86_64-text-static.tar.gz
+    rpmfusion_url: https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-{{ ansible_distribution_version }}.noarch.rpm
+    spotify_url: http://negativo17.org/repos/fedora-spotify.repo
     unison_bin: unison-2.40.61-linux-x86_64-text-static
+    unison_url: http://unison-binaries.inria.fr/files/2011.01.28-Esup-unison-2.40.61-linux-x86_64-text-static.tar.gz
   tasks:
+    - hostname: name=yacko.pbh-network.com
     - shell: rpm --quiet -q python2-dnf2 || dnf install -y python2-dnf
     - name: update system
       package: name=* state=latest
@@ -22,14 +25,29 @@
         user: kwestneat
         minute: "*/30"
         job: grep -q "$(/usr/sbin/iwgetid -r)" .unison-wifi && SSH_AUTH_SOCK=$(find /tmp -path "*ssh*" -type s -iname "agent.*") SSH_AGENT_PID=$(pgrep ssh-agent) ~/bin/unison -batch
+    - name: add spotify repo
+      get_url: url={{ spotify_url }} dest=/etc/yum.repos.d/
+    - name: add rpmfusion repo
+      dnf: name={{ rpmfusion_url }} state=present
     - name: install packages
       package: name={{ item }} state=latest
       with_items:
-        - vim-enhanced
-        - i3
+        - feh
+        - ffmpeg
+        - gimp
         - git
-        - pidgin
+        - gstreamer-plugins-bad
+        - gstreamer-plugins-bad-free
+        - gstreamer-plugins-ugly
+        - gstreamer-ffmpeg
+        - gvim
+        - i3
+        - ImageMagick
+        - indent
         - parcellite
+        - pidgin
+        - spotify-client
+        - vim-enhanced
   handlers:
     - name: run fc-cache
       shell: fc-cache -s
